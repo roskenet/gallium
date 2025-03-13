@@ -1,0 +1,58 @@
+import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
+
+const App = () => {
+  return (
+    <Router>
+      <nav>
+        <Link to="/public">Public</Link>
+        <Link to="/private">Private</Link>
+      </nav>
+      <Routes>
+        <Route path="/public" element={<PublicPage />} />
+        <Route path="/private" element={<PrivatePage />} />
+      </Routes>
+    </Router>
+  );
+};
+
+export default App;
+
+const PrivatePage = () => {
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("access_token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
+  const login = () => {
+    const authUrl = "http://localhost:8080/realms/myrealm/protocol/openid-connect/auth";
+    const clientId = "my-client";
+    const redirectUri = window.location.origin + "/private";
+    window.location.href = `${authUrl}?client_id=${clientId}&response_type=token&redirect_uri=${redirectUri}`;
+  };
+
+  useEffect(() => {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get("access_token");
+    if (accessToken) {
+      localStorage.setItem("access_token", accessToken);
+      setToken(accessToken);
+      window.history.replaceState({}, document.title, "/private");
+    }
+  }, []);
+
+  if (!token) {
+    return <div>Please <button onClick={login}>Login</button> to access this page.</div>;
+  }
+
+  return <div>Protected content - You are logged in!</div>;
+};
+
+const PublicPage = () => {
+  return <div>Public content - No authentication required.</div>;
+};
